@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.chart.ScatterChart?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<?import java.lang.Integer?>
+<?import java.lang.Float?>
+<?import javafx.scene.chart.AreaChart?>
+<?import javafx.scene.control.CheckBox?>
+<HBox fillHeight="false" minHeight="700.0" minWidth="1000.0" xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.cnn_java.Controller"
+      fx:id="parent">
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" minHeight="700.0" minWidth="200.0" pannable="true"
+                vbarPolicy="NEVER">
+        <VBox alignment="TOP_CENTER" spacing="20.0">
+            <opaqueInsets>
+                <Insets/>
+            </opaqueInsets>
+            <padding>
+                <Insets left="20.0" right="20.0" top="20.0"/>
+            </padding>
+            <HBox alignment="CENTER" spacing="5.0">
+                <Label text="Hidden Layer Neurons">
+                    <font>
+                        <Font name="Calibri Light" size="14.0"/>
+                    </font>
+                </Label>
+                <fx:define>
+                    <Integer fx:id="minHiddenNeurons" fx:value="1"/>
+                    <Integer fx:id="maxHiddenNeurons" fx:value="1000"/>
+                </fx:define>
+                <Spinner fx:id="hiddenNeuronsSpinner" editable="true" min="$minHiddenNeurons"
+                         max="$maxHiddenNeurons" maxWidth="70" amountToStepBy="1"/>
+            </HBox>
+            <HBox alignment="CENTER" spacing="5.0">
+                <Label text="Learning Rate"/>
+                <fx:define>
+                    <Float fx:id="minLearningRate" fx:value="0.01"/>
+                    <Float fx:id="maxLearningRate" fx:value="100.00"/>
+                </fx:define>
+                <Spinner fx:id="learningRateSpinner" editable="true" min="$minLearningRate"
+                         max="$maxLearningRate" amountToStepBy="0.01" maxWidth="70"/>
+            </HBox>
+            <HBox alignment="CENTER" spacing="5.0">
+                <VBox>
+                    <Label text="Epochs/Goal">
+                        <font>
+                            <Font name="Calibri Light" size="14.0"/>
+                        </font>
+                    </Label>
+                    <HBox spacing="10">
+                        <Label text="Goal">
+                            <font>
+                                <Font name="Calibri Light" size="14.0"/>
+                            </font>
+                        </Label>
+                        <CheckBox fx:id="goalCheckBox"/>
+                    </HBox>
+                </VBox>
+                <fx:define>
+                    <Integer fx:id="minEpochs" fx:value="1"/>
+                    <Integer fx:id="maxEpochs" fx:value="100"/>
+                </fx:define>
+                <Spinner fx:id="epochsSpinner" editable="true" min="$minEpochs" max="$maxEpochs"
+                         maxWidth="70"/>
+            </HBox>
+            <HBox alignment="CENTER" spacing="5.0">
+                <Label text="Training Data Percent">
+                    <font>
+                        <Font name="Calibri Light" size="14.0"/>
+                    </font>
+                </Label>
+                <fx:define>
+                    <Float fx:id="minTraining" fx:value="0.01"/>
+                    <Float fx:id="maxTraining" fx:value="1"/>
+                </fx:define>
+                <Spinner fx:id="trainingDataSpinner" editable="true" min="$minTraining"
+                         max="$maxTraining" maxWidth="70" amountToStepBy="0.01"/>
+            </HBox>
+            <HBox alignment="CENTER" spacing="5.0">
+                <Label maxWidth="60.0" text="Activation Function" textAlignment="CENTER"
+                       wrapText="true"/>
+                <ChoiceBox fx:id="functionSelection" accessibleRole="CHECK_BOX" prefWidth="150.0"/>
+            </HBox>
+            <Button alignment="CENTER" contentDisplay="CENTER" defaultButton="true"
+                    onAction="#onLoadFileClick"
+                    style="-fx-background-color: rgba(0,0,0,0); -fx-border-radius: 5; -fx-border-width: 1; -fx-border-color: rgba(0,0,0,0);"
+                    text="Load File" textAlignment="CENTER">
+                <font>
+                    <Font name="Calibri Light" size="16.0"/>
+                </font>
+            </Button>
+            <Label fx:id="loadedFileName" text="">
+                <font>
+                    <Font name="Calibri Light" size="14.0"/>
+                </font>
+            </Label>
+            <HBox alignment="CENTER">
+                <Button fx:id="resetButton" alignment="CENTER" contentDisplay="CENTER" defaultButton="true"
+                        onAction="#onResetButtonClick"
+                        style="-fx-background-color: rgba(0,0,0,0); -fx-border-radius: 5; -fx-border-width: 1; -fx-border-color: rgba(0,0,0,0);"
+                        text="Reset" textAlignment="CENTER">
+                    <font>
+                        <Font name="Calibri Light" size="16.0"/>
+                    </font>
+                </Button>
+                <Button fx:id="startButton" alignment="CENTER" contentDisplay="CENTER" defaultButton="true"
+                        onAction="#onStartButtonClick"
+                        style="-fx-background-color: rgba(0,0,0,0); -fx-border-radius: 5; -fx-border-width: 1; -fx-border-color: rgba(0,0,0,0);"
+                        text="Start" textAlignment="CENTER">
+                    <font>
+                        <Font name="Calibri Light" size="16.0"/>
+                    </font>
+                </Button>
+            </HBox>
+            <HBox alignment="CENTER" spacing="5.0">
+                <Label text="Accuracy">
+                    <font>
+                        <Font name="Calibri Light" size="18.0"/>
+                    </font>
+                </Label>
+                <Label text="0.00 %" fx:id="accuracy">
+                    <font>
+                        <Font name="Calibri Light" size="18.0"/>
+                    </font>
+                </Label>
+            </HBox>
+            <Label text="Gradient Average Sum">
+                <font>
+                    <Font name="Calibri Light" size="18.0"/>
+                </font>
+            </Label>
+            <AreaChart maxHeight="100.0" maxWidth="200.0" fx:id="gradientGraph">
+                <xAxis>
+                    <NumberAxis maxHeight="100.0" maxWidth="200.0" side="BOTTOM" fx:id="gradientXAxis"/>
+                </xAxis>
+                <yAxis>
+                    <NumberAxis fx:id="gradientYAxis" maxHeight="100.0" maxWidth="30.0" side="LEFT"
+                                upperBound="0.5"/>
+                </yAxis>
+            </AreaChart>
+        </VBox>
+    </ScrollPane>
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" minHeight="700.0" minWidth="800.0" pannable="true"
+                vbarPolicy="NEVER">
+        <VBox alignment="CENTER" minHeight="700.0" minWidth="800.0" spacing="20.0">
+            <padding>
+                <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+            </padding>
+            <StackPane prefHeight="150.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
+                <ScatterChart fx:id="predictedChart" alternativeColumnFillVisible="true"
+                              legendVisible="false">
+                    <xAxis>
+                        <NumberAxis prefHeight="20.0" prefWidth="150.0" side="BOTTOM" fx:id="xAxis"/>
+                    </xAxis>
+                    <yAxis>
+                        <NumberAxis fx:id="yAxis" prefHeight="150.0" prefWidth="30.0" side="LEFT"/>
+                    </yAxis>
+                </ScatterChart>
+                <ScatterChart fx:id="testChart" alternativeColumnFillVisible="true" legendVisible="false"
+                              opacity="0.5">
+                    <xAxis>
+                        <NumberAxis prefHeight="20.0" prefWidth="150.0" side="BOTTOM" fx:id="xAxis1"/>
+                    </xAxis>
+                    <yAxis>
+                        <NumberAxis fx:id="yAxis1" prefHeight="150.0" prefWidth="30.0" side="LEFT"/>
+                    </yAxis>
+                </ScatterChart>
+            </StackPane>
+            <HBox fx:id="testDataContainer" spacing="20"/>
+        </VBox>
+    </ScrollPane>
+</HBox>
