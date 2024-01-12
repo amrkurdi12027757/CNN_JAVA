@@ -3,7 +3,7 @@
 This project aims to showcase the implementation of Neural Networks within the realm of Artificial Intelligence. It explores diverse configurations of hidden layer perceptrons and activation functions. The project is equipped with a script that streamlines the generation of data, facilitating subsequent training and testing procedures
 ## Features
 
-- **Demo Data Generation:** Utilize the `GenerateFruitDataset` class under the `com.example.cnn_java.dataPackage` package to generate demo data.
+- **Demo Data Generation:** Utilize the `GenerateFruitDataset` class under the `com.example.cnn_java.datapackage` package to generate demo data.
 
 - **Gradient Descent Visualization:** Graphically represent the gradient descent per epoch, providing a visual insight into the optimization process.
 

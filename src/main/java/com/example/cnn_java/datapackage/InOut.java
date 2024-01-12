@@ -1,4 +1,4 @@
-package com.example.cnn_java.dataPackage;
+package com.example.cnn_java.datapackage;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,6 +1,6 @@
-package com.example.cnn_java.dataPackage;
+package com.example.cnn_java.datapackage;
 
-import com.example.cnn_java.dataPackage.dataProcessor.Processor;
+import com.example.cnn_java.datapackage.dataprocessor.Processor;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import lombok.Data;

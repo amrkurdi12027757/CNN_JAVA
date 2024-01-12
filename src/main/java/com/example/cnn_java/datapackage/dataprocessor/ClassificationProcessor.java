@@ -1,12 +1,15 @@
-package com.example.cnn_java.dataPackage.dataProcessor;
+package com.example.cnn_java.datapackage.dataprocessor;
 
-import com.example.cnn_java.dataPackage.CSVData;
+import com.example.cnn_java.arduino.Ciable;
+import com.example.cnn_java.datapackage.CSVData;
 
 import java.util.*;
 
-public class ClassificationProcessor implements Processor {
+public class ClassificationProcessor implements Processor, Ciable {
   private LinkedHashMap<String, Float> maxValues;
   private LinkedHashMap<String, Float> minValues;
+  private LinkedHashMap<String, Float> means;
+  private LinkedHashMap<String, Float> standardDeviations;
   public LinkedHashMap<String, LinkedHashSet<String>> classes;
 
 
@@ -18,11 +21,15 @@ public class ClassificationProcessor implements Processor {
 
   public ClassificationProcessor(CSVData csv, float trainToTestRatio) {
     this.csv = csv;
+    List<String[]> rows = csv.getRows();
+    List<String[]> shuffledRows = new ArrayList<>(rows.subList(1, csv.getNumRows()));
+    Collections.shuffle(shuffledRows);
+    shuffledRows.add(0, rows.get(0));
+    csv.setRows(shuffledRows);
     this.trainToTestRatio = trainToTestRatio;
-    List<String[]> csvRows = csv.getRows();
     for (int line = 0; line < csv.getNumRows(); line++) {
       if (line != 0) {
-        String[] cells = csvRows.get(line);
+        String[] cells = shuffledRows.get(line);
         int cellIndex = 0;
         for (String label : classes.keySet()) {
           String cellValue = cells[cellIndex];
@@ -32,6 +39,27 @@ public class ClassificationProcessor implements Processor {
               maxValues.replace(label, number);
             if (number < minValues.get(label))
               minValues.replace(label, number);
+            means.replace(label, means.get(label) + number);
+
+            if (line == csv.getNumRows() - 1) {
+              means.replace(label, means.get(label) / csv.getNumRows());
+              standardDeviationLoop:
+              for (int line1 = 1; line1 < csv.getNumRows(); line1++) {
+                String[] cells1 = shuffledRows.get(line1);
+                int cellIndex1 = 0;
+                for (String label1 : classes.keySet()) {
+                  String cellValue1 = cells1[cellIndex1];
+                  float number1 = Float.parseFloat(cellValue1);
+                  standardDeviations.replace(label1, (float) (standardDeviations.get(label1) + Math.pow(number1 - means.get(label1), 2)));
+                  if (line1 == csv.getNumRows() - 1)
+                    standardDeviations.replace(label1, (float) Math.sqrt(standardDeviations.get(label1) / csv.getNumRows()));
+                  cellIndex1++;
+                  if (cellIndex1 == csv.getNumCols() - 1)
+                    break;
+                }
+              }
+            }
+
           } catch (NumberFormatException ex) {
             HashSet<String> existingClasses = classes.get(label);
             existingClasses.add(cellValue);
@@ -41,12 +69,16 @@ public class ClassificationProcessor implements Processor {
       } else {
         maxValues = new LinkedHashMap<>();
         minValues = new LinkedHashMap<>();
+        means = new LinkedHashMap<>();
+        standardDeviations = new LinkedHashMap<>();
         classes = new LinkedHashMap<>();
         for (String label :
-                csvRows.get(0)) {
+                shuffledRows.get(0)) {
           String lowerCase = label.toLowerCase();
           maxValues.put(lowerCase, Float.MIN_VALUE);
           minValues.put(lowerCase, Float.MAX_VALUE);
+          means.put(lowerCase, 0f);
+          standardDeviations.put(lowerCase, 0f);
           classes.put(lowerCase, new LinkedHashSet<>());
         }
       }
@@ -66,7 +98,7 @@ public class ClassificationProcessor implements Processor {
         String value = row[cellIndex];
         String label = labelsArray[cellIndex];
         try {
-          inputs[rowIndex - 1][cellIndex] = normalize(Float.parseFloat(value), label);
+          inputs[rowIndex - 1][cellIndex] = zScoreNormalization(Float.parseFloat(value), label);
         } catch (NumberFormatException ex) {
           inputs[rowIndex - 1][cellIndex] = classifyIn(value, label);
         }
@@ -101,12 +133,16 @@ public class ClassificationProcessor implements Processor {
   }
 
 
-  private float normalize(float value, String label) {
+  private float minMaxNormalize(float value, String label) {
     return normalize(value, maxValues.get(label), minValues.get(label));
   }
 
   private float normalize(float value, float maxValue, float minValue) {
     return (value - minValue) / (maxValue - minValue);
+  }
+
+  private float zScoreNormalization(float value, String label) {
+    return (value - means.get(label)) / standardDeviations.get(label);
   }
 
   private float[] classifyOut(String value, String label) {
@@ -138,7 +174,7 @@ public class ClassificationProcessor implements Processor {
     LinkedHashSet<String> existingClasses = classes.get(lowerCase);
     if (existingClasses.isEmpty()) {
       try {
-        return normalize(Float.parseFloat(value), lowerCase);
+        return zScoreNormalization(Float.parseFloat(value), lowerCase);
       } catch (NumberFormatException exception) {
         return 0.0f;
       }
@@ -183,5 +219,32 @@ public class ClassificationProcessor implements Processor {
       System.arraycopy(data[i], 0, splittedData[i - lowerStartingBound], 0, data[0].length);
     }
     return splittedData;
+  }
+
+  @Override
+  public String toCpp() {
+    StringBuilder stringBuilder = new StringBuilder("String classifyOutInverse(float* out) {\n")
+            .append("   float max = -9999999;\n   int index = -1;\n");
+    for (int i = 0; i < lastClasses.length; i++) {
+      stringBuilder.append("    if (out[").append(i).append("] > max) {\n       max = out[").append(i).append("];\n       index = ").append(i).append(";\n    }\n");
+    }
+    stringBuilder.append("    delete[] out;\n   return clazz[index];\n}\n");
+    stringBuilder.append("float* classifyIn(float* in){\n").append("  float* classed = new float[").append(csv.getNumCols() - 1).append("];\n");
+    String[] labels = csv.getRows().get(0);
+    for (int i = 0; i < labels.length - 1; i++) {
+      stringBuilder.append("  classed[").append(i).append("] = ( in[").append(i).append("] - ").append(means.get(labels[i].toLowerCase())).append(" ) / ").append(standardDeviations.get(labels[i].toLowerCase())).append(";\n");
+    }
+    stringBuilder.append("  return classed;\n}\n");
+    return stringBuilder.toString();
+  }
+
+  @Override
+  public String toH() {
+    StringBuilder stringBuilder = new StringBuilder("const String clazz[] = {");
+    for (int i = 0; i < lastClasses.length; i++) {
+      stringBuilder.append("\"").append(lastClasses[i]).append((i != lastClasses.length - 1) ? "\"," : "\"};\n");
+    }
+    stringBuilder.append("String classifyOutInverse(float*);\nfloat* classifyIn(float*);\n");
+    return stringBuilder.toString();
   }
 }

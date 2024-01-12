@@ -1,4 +1,4 @@
-package com.example.cnn_java.dataPackage;
+package com.example.cnn_java.datapackage;
 
 import java.io.FileWriter;
 import java.io.IOException;

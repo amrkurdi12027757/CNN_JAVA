@@ -1,10 +1,10 @@
 package com.example.cnn_java;
 
-import com.example.cnn_java.dataPackage.CSVData;
-import com.example.cnn_java.dataPackage.InOut;
-import com.example.cnn_java.dataPackage.dataProcessor.ClassificationProcessor;
-import com.example.cnn_java.neuralNetworkPackage.NeuralNetwork;
-import com.example.cnn_java.neuralNetworkPackage.activationFunctions.Activation;
+import com.example.cnn_java.datapackage.CSVData;
+import com.example.cnn_java.datapackage.InOut;
+import com.example.cnn_java.datapackage.dataprocessor.ClassificationProcessor;
+import com.example.cnn_java.neuralnetworkpackage.NeuralNetwork;
+import com.example.cnn_java.neuralnetworkpackage.activationfunctions.Activation;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -18,7 +18,6 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -27,7 +26,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.example.cnn_java.InterfaceImplementingClassesFinder.findImplementingClasses;
-import static java.lang.Thread.sleep;
 
 
 public class Controller {
@@ -45,8 +43,6 @@ public class Controller {
   private static float[][] inputs;
   private static float[][] outputs;
   private static CSVData csvData;
-  private static String externalForm;
-  private static boolean firstTime;
   private static int runNumber;
   @FXML
   public ChoiceBox functionSelection;
@@ -114,9 +110,9 @@ public class Controller {
                 testingData = csvData.getTestingData(classificationProcessor);
                 try {
                   neuralNetwork = NeuralNetwork.builder()
-                          .layer(2)
+                          .layer(classificationProcessor.classes.size() - 1)
                           .layer((int) hiddenNeuronsSpinner.getValue())
-                          .layer(3)
+                          .layer(classificationProcessor.classes.get("class").size())
                           .function((Activation) ((Class<?>) functionSelection.getValue()).getDeclaredConstructor().newInstance())
                           .build();
                 } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
@@ -126,11 +122,7 @@ public class Controller {
                 inputs = testingData.getInputs();
                 outputs = testingData.getOutputs();
                 seriesList = new LinkedHashMap<>();
-                firstTime = true;
                 runNumber = 0;
-                prepareTestingDataColors();
-                writeCSSBullets();
-                externalForm = getClass().getResource("style.css").toExternalForm();
                 fillGraph(testChart, inputs, outputs, "", false);
                 gradientGraph.getData().add(new XYChart.Series<>());
                 disableInputs();
@@ -168,54 +160,6 @@ public class Controller {
     );
   }
 
-  private void prepareTestingDataColors() {
-
-    Map<String, Integer> colorFruitCount = new HashMap<>();
-    float[][] rows = classificationProcessor.getTestInputs();
-    float[][] rowsOut = classificationProcessor.getTestOutputs();
-
-    for (int i = 0; i < rows.length; i++) {
-
-      float color = rows[i][1];
-      StringBuilder combination = new StringBuilder(classificationProcessor.classifyOutInverse(rowsOut[i])).append(color);
-      Integer count = colorFruitCount.get(combination.toString());
-      if (count == null) {
-        colorFruitCount.put(combination.toString(), colorFruitCount.size());
-        LinkedHashSet<String> colors = classificationProcessor.classes.get("color");
-        writeCSSSeriesColor(colorFruitCount.size(), (String) colors.toArray()[(int) (color * colors.size())]);
-      }
-
-    }
-  }
-
-  private static void writeCSS(StringBuilder stringBuilder) {
-    String fileName = "src/main/resources/com/example/cnn_java/style.css";
-    try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, !firstTime))) {
-      firstTime = false;
-      writer.write(stringBuilder.toString());
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-  }
-
-  private static void writeCSSSeriesColor(int count, String color) {
-    writeCSS(new StringBuilder(".default-color")
-            .append(count - 1)
-            .append("{\n-fx-background-color: ")
-            .append(color)
-            .append(";\n}\n")
-            .append(".series")
-            .append(count - 1)
-            .append("{\n-fx-background-color: ")
-            .append(color)
-            .append(";\n}\n")
-    );
-  }
-
-  private static void writeCSSBullets() {
-    writeCSS(new StringBuilder("\n.chart-symbol {\n-fx-shape: \"M39 20a19 19 0 1 1-38 0 19 19 0 1 1 38 0z\";\n-fx-background-insets: 0, 2;\n-fx-background-radius: 5px;\n-fx-padding: 5px;}\n"));
-  }
-
   private void fillGraph(ScatterChart scatterChart, float[][] inputs, float[][] outputs, String name, boolean rebuild) {
     if (rebuild) {
 
@@ -225,7 +169,6 @@ public class Controller {
           next.getValue().getData().clear();
       }
     }
-    scatterChart.getStylesheets().add(externalForm);
     for (int i = 0; i < inputs.length; i++) {
       float color = inputs[i][1];
       StringBuilder combination = new StringBuilder(classificationProcessor.classifyOutInverse(outputs[i])).append(color);
@@ -337,5 +280,22 @@ public class Controller {
       });
     }
 
+  }
+
+  public void onExportCButtonClick(ActionEvent actionEvent) throws IOException {
+    // Creating nuralNetwork.h
+    String headerFileName = "nuralNetwork.h";
+    FileWriter writerH = new FileWriter(headerFileName);
+    writerH.write("// Header file for nuralNetwork\n#include \"Arduino.h\"\n");
+    writerH.write(classificationProcessor.toH());
+    writerH.write(neuralNetwork.toH());
+    writerH.close();
+
+    // Creating nuralNetwork.cpp
+    FileWriter writerCpp = new FileWriter("nuralNetwork.cpp");
+    writerCpp.write("// Implementation file for nuralNetwork\n#include \"" + headerFileName + "\"\n");
+    writerCpp.write(classificationProcessor.toCpp());
+    writerCpp.write(neuralNetwork.toCpp());
+    writerCpp.close();
   }
 }
